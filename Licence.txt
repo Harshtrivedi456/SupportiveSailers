@@ -1,1 +1,20 @@
+Custom License – Educational Use Only
 
+Project: Supportive Sailers – Route Optimization Platform  
+Author: Harsh Trivedi  
+Year: 2025  
+Contact: Instagram @h4rsh_458 | Email: harshtrivedi561@gmail.com
+
+Copyright © 2025 Harsh Trivedi  
+All rights reserved.
+
+This codebase and its contents are protected.  
+You may NOT:
+- Claim ownership of this work
+- Resell or redistribute it
+- Submit it for academic, freelance, or commercial use
+
+You MAY:
+- View and fork for personal learning
+
+To access full documentation or commercial license, contact the author.
