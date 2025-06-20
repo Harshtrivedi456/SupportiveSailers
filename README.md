@@ -83,8 +83,29 @@ Also ideal for:
 GitHub: [@Harshtrivedi456](https://github.com/Harshtrivedi456)
 
 ---
+---
 
-🎯 **Want this project with code, documentation, and support?**  
-📩 DM me on Instagram: `h4rsh_458`  
-or  
-📥 Fill the form: [Google Form Link Coming Soon]
+## ⚖️ License & Usage
+
+© 2025 Harsh Trivedi. All Rights Reserved.
+
+This repository is made available **only for personal viewing and educational reference**.
+
+❌ You are **NOT allowed** to:
+- Submit this project as your own work (academic or freelance)
+- Resell or redistribute this code or its variations
+- Use the codebase for commercial purposes without permission
+
+✅ You ARE allowed to:
+- View and learn from the code
+- Fork the repo for educational exploration
+
+📦 Want the full, ready-to-submit package with:
+- PDF documentation
+- API setup guidance
+- Customization & support?
+
+📩 DM on Instagram: `h4rsh_458`  
+📥 Or fill the request form: [Google Form – coming soon]
+
+
