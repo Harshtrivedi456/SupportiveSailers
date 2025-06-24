@@ -132,58 +132,66 @@
             }
             return null;
         }
-  async function optimizeAndShowRoute() {
+async function optimizeAndShowRoute() {
     if (waypoints.length < 2) {
-      alert('Add at least two waypoints to optimize.');
-      return;
+        alert("Add at least 2 waypoints.");
+        return;
     }
+
     showLoadingMessage();
-    
+
     const payload = {
-      waypoints: waypoints.map(wp => ({
-        point: { latitude: wp.lat, longitude: wp.lng }
-      })),
-      options: {
-        traffic: 'live',
-        travelMode: 'car',
-        outputExtensions: ['travelTimes', 'routeLengths']
-      }
+        waypoints: waypoints.map(wp => ({
+            point: {
+                latitude: wp.lat,
+                longitude: wp.lng
+            }
+        }))
     };
-    
-    const resp = await fetch(`https://api.tomtom.com/routing/waypointoptimization/1?key=${TOMTOM_API_KEY}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
-    const data = await resp.json();
-    if (!data.optimizedOrder) {
-      hideLoadingMessage();
-      alert('Failed optimizing route');
-      return;
+
+    try {
+        const response = await fetch(`https://api.tomtom.com/routing/waypointoptimization/1?key=${TOMTOM_API_KEY}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            console.error("Error response from TomTom:", data);
+            alert(`TomTom API error: ${data.error?.description || "Unknown error"}`);
+            hideLoadingMessage();
+            return;
+        }
+
+        const order = data.optimizedOrder;
+        const orderedWaypoints = order.map(i => waypoints[i]);
+
+        routeSegments.forEach(segment => map.removeLayer(segment));
+        routeSegments = [];
+        totalDistance = totalTravelTime = totalTimeInTraffic = 0;
+
+        for (let i = 0; i < orderedWaypoints.length - 1; i++) {
+            await drawRoadSegmentWithTraffic(orderedWaypoints[i], orderedWaypoints[i + 1]);
+        }
+
+        hideLoadingMessage();
+        showRouteInfoPopup();
+
+        // Update marker labels
+        waypointMarkers.forEach((marker, idx) => {
+            const newIdx = order.indexOf(idx);
+            marker.bindPopup(newIdx === 0 ? "Start" : `#${newIdx}`);
+        });
+
+    } catch (error) {
+        console.error("Request failed:", error);
+        alert("Failed to connect to TomTom API.");
+        hideLoadingMessage();
     }
+}
 
-    const order = data.optimizedOrder; // e.g. [0, 3, 1, 2]
-    const orderedWaypoints = order.map(i => waypoints[i]);
-
-    // Clear old route visuals
-    routeSegments.forEach(s => map.removeLayer(s));
-    routeSegments = [];
-    totalDistance = totalTravelTime = totalTimeInTraffic = 0;
-
-    // Draw segments in optimized order
-    for (let i = 0; i + 1 < orderedWaypoints.length; i++) {
-      await drawRoadSegmentWithTraffic(orderedWaypoints[i], orderedWaypoints[i + 1]);
-    }
-
-    hideLoadingMessage();
-    showRouteInfoPopup();
-
-    // Relabel markers for clarity
-    waypointMarkers.forEach((marker, idx) => {
-      const posInOrder = order.indexOf(idx);
-      marker.bindPopup(posInOrder === 0 ? 'Start' : `#${posInOrder}`);
-    });
-  }
         async function drawRoadSegmentWithTraffic(start, end) {
             const routeData = await fetchRoadRouteWithTraffic(start, end);
             const trafficColor = getTrafficColor(routeData.totalTimeInTraffic);
