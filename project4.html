@@ -132,35 +132,58 @@
             }
             return null;
         }
-        async function optimizeAndShowRoute() {
-            if (waypoints.length < 2) { alert('Please select at least 2 waypoints.'); return; }
-            routeSegments.forEach(segment => map.removeLayer(segment));
-            routeSegments = [];
-            totalDistance = totalTravelTime = totalTimeInTraffic = 0;
-            showLoadingMessage();
-            let remainingWaypoints = [...waypoints];
-            let optimizedRoute = [remainingWaypoints[0]];
-            remainingWaypoints.splice(0, 1);
-            while (remainingWaypoints.length > 0) {
-                let current = optimizedRoute[optimizedRoute.length - 1];
-                let nearest = findNearestPoint(current, remainingWaypoints);
-                optimizedRoute.push(nearest.point);
-                remainingWaypoints.splice(nearest.index, 1);
-            }
-            for (let i = 0; i < optimizedRoute.length - 1; i++) {
-                await drawRoadSegmentWithTraffic(optimizedRoute[i], optimizedRoute[i + 1]);
-            }
-            hideLoadingMessage();
-            showRouteInfoPopup();
-        }
-        function findNearestPoint(current, remaining) {
-            let nearest = { point: null, index: -1, distance: Infinity };
-            for (let i = 0; i < remaining.length; i++) {
-                let distance = current.distanceTo(remaining[i]);
-                if (distance < nearest.distance) { nearest = { point: remaining[i], index: i, distance: distance }; }
-            }
-            return nearest;
-        }
+  async function optimizeAndShowRoute() {
+    if (waypoints.length < 2) {
+      alert('Add at least two waypoints to optimize.');
+      return;
+    }
+    showLoadingMessage();
+    
+    const payload = {
+      waypoints: waypoints.map(wp => ({
+        point: { latitude: wp.lat, longitude: wp.lng }
+      })),
+      options: {
+        traffic: 'live',
+        travelMode: 'car',
+        outputExtensions: ['travelTimes', 'routeLengths']
+      }
+    };
+    
+    const resp = await fetch(`https://api.tomtom.com/routing/waypointoptimization/1?key=${TOMTOM_API_KEY}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await resp.json();
+    if (!data.optimizedOrder) {
+      hideLoadingMessage();
+      alert('Failed optimizing route');
+      return;
+    }
+
+    const order = data.optimizedOrder; // e.g. [0, 3, 1, 2]
+    const orderedWaypoints = order.map(i => waypoints[i]);
+
+    // Clear old route visuals
+    routeSegments.forEach(s => map.removeLayer(s));
+    routeSegments = [];
+    totalDistance = totalTravelTime = totalTimeInTraffic = 0;
+
+    // Draw segments in optimized order
+    for (let i = 0; i + 1 < orderedWaypoints.length; i++) {
+      await drawRoadSegmentWithTraffic(orderedWaypoints[i], orderedWaypoints[i + 1]);
+    }
+
+    hideLoadingMessage();
+    showRouteInfoPopup();
+
+    // Relabel markers for clarity
+    waypointMarkers.forEach((marker, idx) => {
+      const posInOrder = order.indexOf(idx);
+      marker.bindPopup(posInOrder === 0 ? 'Start' : `#${posInOrder}`);
+    });
+  }
         async function drawRoadSegmentWithTraffic(start, end) {
             const routeData = await fetchRoadRouteWithTraffic(start, end);
             const trafficColor = getTrafficColor(routeData.totalTimeInTraffic);
